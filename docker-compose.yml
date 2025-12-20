@@ -1,0 +1,92 @@
+version: "3.8"
+
+services:
+  redpanda:
+    image: redpandadata/redpanda:latest
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp
+      - "1"
+      - --memory
+      - "1G"
+      - --reserve-memory
+      - "0M"
+      - --node-id
+      - "0"
+      - --check=false
+      - --kafka-addr
+      - PLAINTEXT://0.0.0.0:9092
+      - --advertise-kafka-addr
+      - PLAINTEXT://redpanda:9092
+    ports:
+      - "9092:9092"
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: eventflow
+    ports:
+      - "5432:5432"
+
+  api-service:
+    build:
+      context: .
+      dockerfile: services/api-service/Dockerfile
+    environment:
+      KAFKA_BOOTSTRAP: redpanda:9092
+      CREATED_TOPIC: order.created
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redpanda
+
+  validator-service:
+    build:
+      context: .
+      dockerfile: services/validator-service/Dockerfile
+    environment:
+      KAFKA_BOOTSTRAP: redpanda:9092
+      IN_TOPIC: order.created
+      OUT_TOPIC: order.validated
+      DLQ_TOPIC: order.dlq
+    depends_on:
+      - redpanda
+
+  storage-service:
+    build:
+      context: .
+      dockerfile: services/storage-service/Dockerfile
+    environment:
+      KAFKA_BOOTSTRAP: redpanda:9092
+      IN_TOPIC: order.validated
+      OUT_TOPIC: order.stored
+      DLQ_TOPIC: order.dlq
+      POSTGRES_DSN: postgresql://app:app@postgres:5432/eventflow
+    depends_on:
+      - redpanda
+      - postgres
+
+  notifier-service:
+    build:
+      context: .
+      dockerfile: services/notifier-service/Dockerfile
+    environment:
+      KAFKA_BOOTSTRAP: redpanda:9092
+      IN_TOPIC: order.stored
+      DLQ_TOPIC: order.dlq
+    depends_on:
+      - redpanda
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: redpanda:9092
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redpanda

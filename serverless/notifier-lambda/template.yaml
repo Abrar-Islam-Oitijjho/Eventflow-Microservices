@@ -1,0 +1,19 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: EventFlow notifier stub (optional)
+
+Resources:
+  NotifierFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Runtime: python3.11
+      Handler: handler.lambda_handler
+      Timeout: 10
+      MemorySize: 128
+      Events:
+        KafkaTrigger:
+          Type: MSK
+          Properties:
+            # Fill in your MSK cluster ARN + topic mapping if you deploy to AWS
+            # This file is included as a reference only.
+            Stream: arn:aws:kafka:REGION:ACCOUNT:cluster/NAME/UUID
