@@ -43,7 +43,7 @@ curl -X POST http://localhost:8000/orders \
 ```
 
 ### 3) Watch the pipeline
-In the `docker compose` logs, you should see:
+In the `docker compose` logs:
 - API publishes `order.created`
 - Validator publishes `order.validated`
 - Storage writes to Postgres and publishes `order.stored`
