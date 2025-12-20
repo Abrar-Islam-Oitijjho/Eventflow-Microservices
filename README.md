@@ -72,6 +72,3 @@ It will create:
 - Redpanda is Kafka-compatible, so standard Kafka libraries work.
 - Each consumer is **idempotent** using `(event_id)` de-duplication.
 - Failed messages are sent to `order.dlq` with error details.
-
-## License
-MIT
