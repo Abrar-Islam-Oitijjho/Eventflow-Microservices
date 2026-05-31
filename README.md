@@ -23,16 +23,29 @@ This project is designed around cloud-native backend architecture patterns:
   <img src="docs/architecture_v2.png" alt="EventFlow microservices architecture" width="850">
 </p>
 
-The system follows an asynchronous event-driven architecture. Each service owns a specific responsibility and communicates through Kafka-compatible Redpanda topics.
+## Event Flow
 
-### Event Flow
-
-1. The client sends an order request to the FastAPI API service.
-2. The API service validates the request and publishes an `order.created` event.
-3. The Validator Service consumes `order.created`, performs business validation, and publishes `order.validated`.
-4. The Storage Service consumes `order.validated`, stores the order in PostgreSQL, and publishes `order.stored`.
-5. The Notifier Service consumes `order.stored` and sends/logs the final notification.
-6. Invalid or failed events are routed to the dead-letter queue topic `order.dlq`.
+```text
+Client
+  |
+  v
+api-service  -- publishes -->  order.created
+  |
+  v
+Redpanda / Kafka
+  |
+  v
+validator-service  -- publishes -->  order.validated
+  |
+  v
+storage-service  -- writes --> PostgreSQL
+  |
+  v
+storage-service  -- publishes -->  order.stored
+  |
+  v
+notifier-service  -- sends/logs notification
+```
 
 Invalid or failed events are published to:
 
