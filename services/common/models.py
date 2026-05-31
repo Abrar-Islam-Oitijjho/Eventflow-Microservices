@@ -36,3 +36,32 @@ def make_event(event_type: str, payload: dict, *, source: str, trace_id: str | N
     return EventEnvelope(
         event_type=event_type, payload=payload, source=source, trace_id=trace_id or str(uuid4())
     )
+
+def make_dlq_event(
+    original_event: EventEnvelope,
+    *,
+    source: str,
+    failure_stage: str,
+    error_message: str,
+    retry_attempts: int | None = None,
+) -> EventEnvelope:
+    """
+    Create a dead-letter queue event with enough metadata
+    to debug and potentially replay the failed event.
+    """
+    dlq_payload = {
+        "original_event_id": original_event.event_id,
+        "original_event_type": original_event.event_type,
+        "source_service": source,
+        "failure_stage": failure_stage,
+        "error_message": error_message,
+        "retry_attempts": retry_attempts,
+        "original_payload": original_event.payload,
+    }
+
+    return make_event(
+        "order.dlq",
+        dlq_payload,
+        source=source,
+        trace_id=original_event.trace_id,
+    )

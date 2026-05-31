@@ -5,7 +5,7 @@ import time
 
 from services.common.kafka_utils import build_consumer, build_producer, wait_for_kafka
 from services.common.logging_utils import setup_logger, log_json
-from services.common.models import EventEnvelope, OrderPayload, make_event
+from services.common.models import EventEnvelope, OrderPayload, make_event, make_dlq_event
 
 logger = setup_logger("validator-service")
 
@@ -46,14 +46,27 @@ def main():
                 log_json(logger, service="validator-service", action="validated", in_event_id=event.event_id,
                         out_event_id=out_event.event_id, trace_id=event.trace_id, order_id=event.payload.get("order_id"))
             except Exception as e:
-                dlq = make_event("order.dlq", event.payload, source="validator-service", trace_id=event.trace_id)
-                dlq.error = f"validation_error: {e}"
+                dlq = make_dlq_event(
+                    event,
+                    source="validator-service",
+                    failure_stage="order_validation",
+                    error_message=str(e),
+                    retry_attempts=None,
+                )
+
                 producer.send(DLQ_TOPIC, value=dlq.model_dump())
                 producer.flush(timeout=10)
                 consumer.commit()
 
-                log_json(logger, service="validator-service", action="dlq", reason=str(e),
-                        trace_id=event.trace_id, order_id=event.payload.get("order_id"))
+                log_json(
+                    logger,
+                    service="validator-service",
+                    action="dlq",
+                    reason=str(e),
+                    failure_stage="order_validation",
+                    trace_id=event.trace_id,
+                    order_id=event.payload.get("order_id"),
+                )
 
         if not any_msg:
             time.sleep(0.5)
