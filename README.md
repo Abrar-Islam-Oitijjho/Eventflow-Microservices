@@ -116,7 +116,6 @@ Eventflow-Microservices-main/
 ├── docker-compose.yml
 ├── Makefile
 ├── README.md
-├── requirements.txt
 ├── docs/
 │   ├── architecture_v2.png
 │   ├── events.md
@@ -129,18 +128,12 @@ Eventflow-Microservices-main/
 │   └── notifier-lambda/
 │       ├── handler.py
 │       └── template.yaml
-├── services/
-│   ├── api-service/
-│   ├── validator-service/
-│   ├── storage-service/
-│   ├── notifier-service/
-│   └── common/
-│       ├── models.py
-│       ├── logging_utils.py
-│       └── retry_utils.py
-└── tests/
-    ├── test_retry_utils.py
-    └── test_dlq_event.py
+└── services/
+    ├── api-service/
+    ├── validator-service/
+    ├── storage-service/
+    ├── notifier-service/
+    └── common/
 ```
 
 ## Quick Start with Docker
