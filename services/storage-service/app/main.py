@@ -1,4 +1,5 @@
 from __future__ import annotations
+from services.common.retry_utils import retry_with_backoff
 
 import json
 import os
@@ -55,8 +56,8 @@ def main():
                 continue
 
             try:
-                persist_order(event.payload)
-                mark_processed(event.event_id)
+                retry_with_backoff(lambda: persist_order(event.payload), attempts=3)
+                retry_with_backoff(lambda: mark_processed(event.event_id), attempts=3)
 
                 out_event = make_event("order.stored", event.payload, source="storage-service", trace_id=event.trace_id)
                 producer.send(OUT_TOPIC, value=out_event.model_dump())
